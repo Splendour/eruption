@@ -1,0 +1,6 @@
+[SearchableFiles.include]
+src/
+
+[SearchableFiles.ignore]
+
+
