@@ -41,6 +41,7 @@ Renderer::Renderer(const Window& _window)
 
         SmallVector<const char*, 8> instanceExtensions = {
             VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+            VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
             //VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
             //VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME,
         };
@@ -104,6 +105,7 @@ Renderer::Renderer(const Window& _window)
         SmallVector<const char*, 8> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+            VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
         };
         vk::DeviceCreateInfo deviceinfo;
         deviceinfo.setPEnabledExtensionNames({ deviceExtensions.size(), deviceExtensions.data() });
@@ -129,6 +131,7 @@ Renderer::Renderer(const Window& _window)
         deviceinfo.setQueueCreateInfos(queueinfo);
 
         m_device = m_gpu.createDeviceUnique(deviceinfo).value;
+        m_loader.init(m_device.get());
 
         vk::Queue q = m_device->getQueue(qindex, 0);
         m_gQueue = q;
@@ -199,6 +202,7 @@ Renderer::Renderer(const Window& _window)
         m_viewportDims = _window.getDims();
         createResolutionDependentResources();
     }
+
 }
 
 Renderer::~Renderer()
@@ -284,7 +288,7 @@ void Renderer::chooseAndInitGpu()
     m_gpu = devices[bestDeviceIndex];
 
 
-    #if 1
+    #if 0
     u32 extCnt = 0;
     vkEnumerateDeviceExtensionProperties(m_gpu, nullptr, &extCnt, nullptr);
     std::vector<VkExtensionProperties> exts(extCnt);
@@ -300,7 +304,6 @@ void Renderer::createResolutionDependentResources()
     {
         vk::SwapchainCreateInfoKHR swapchaininfo;
         vk::SurfaceCapabilitiesKHR surfCaps = m_gpu.getSurfaceCapabilitiesKHR(m_surface.get()).value;
-
         swapchaininfo.setImageFormat(s_backbufferFormat);
         swapchaininfo.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear);
         swapchaininfo.setImageArrayLayers(1);
@@ -310,17 +313,16 @@ void Renderer::createResolutionDependentResources()
         swapchaininfo.setSurface(m_surface.get());
         swapchaininfo.setMinImageCount(s_swapChainImageCount);
         swapchaininfo.setPreTransform(surfCaps.currentTransform);
-        swapchaininfo.setPresentMode(vk::PresentModeKHR::eImmediate);
+        swapchaininfo.setPresentMode(vk::PresentModeKHR::eMailbox);
         swapchaininfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
         swapchaininfo.setQueueFamilyIndices({ 0, nullptr });
         swapchaininfo.setOldSwapchain(m_swapChain.get());
 
-        m_swapChain = std::move(m_device->createSwapchainKHRUnique(swapchaininfo).value);
+        m_swapChain = m_device->createSwapchainKHRUnique(swapchaininfo).value;
 
         auto swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get()).value;
-
         for (u32 i = 0; i < swapChainImages.size(); ++i) {
-            //nameImage(swapChainImages[i], "Backbuffer image");
+            nameImage(swapChainImages[i], "Backbuffer image");
 
             vk::ImageViewCreateInfo viewinfo;
             viewinfo.setViewType(vk::ImageViewType::e2D);
@@ -346,13 +348,11 @@ void Renderer::createResolutionDependentResources()
 
 void Renderer::nameImage(vk::Image _img, LiteralString _name)
 {
-    _img;
-    _name;
-    //vk::DebugMarkerObjectNameInfoEXT info;
-    //info.setObject((u64)_img.operator VkImage());
-    //info.setPObjectName(_name);
-    //VkDebugMarkerObjectNameInfoEXT m = info;
-    //vulkanNameObject(m_device, &m);
+    vk::DebugUtilsObjectNameInfoEXT info;
+    info.setObjectType(vk::ObjectType::eImage);
+    info.setObjectHandle((u64)_img.operator VkImage());
+    info.setPObjectName(_name);
+    VK_CHECK(m_device->setDebugUtilsObjectNameEXT(info, m_loader));
 }
 
 void Renderer::resize(uint2 _newDims)

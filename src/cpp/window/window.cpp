@@ -39,10 +39,13 @@ GLFWmonitor* getCurrentMonitor(GLFWwindow* window)
     return bestmonitor;
 }
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int, int mods)
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     UNREFERENCED_PARAMETER(mods);
     UNREFERENCED_PARAMETER(scancode);
+
+    if (action != GLFW_PRESS)
+        return;
 
     Window* windowPtr = static_cast<Window*>(glfwGetWindowUserPointer(window));
     if (key == GLFW_KEY_ESCAPE)
@@ -73,7 +76,7 @@ void resizeCallback(GLFWwindow* _myWindow, int _width, int _height)
     Window* windowPtr = static_cast<Window*>(glfwGetWindowUserPointer(_myWindow));
     uint2 newDims = { (u32)_width, (u32)_height };
     windowPtr->setDims(newDims);
-    logInfo("Window resize to {}x{}", newDims.x, newDims.y);
+    //logInfo("Window resize to {}x{}", newDims.x, newDims.y);
 }
 
 

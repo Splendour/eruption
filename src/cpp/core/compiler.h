@@ -20,4 +20,6 @@
 #define ALIGNED_TYPE16  ALIGNED_TYPE(16)
 #define ALIGNED_TYPE256 ALIGNED_TYPE(256)
 
+#define DISCARD(x) static_cast<void>(x)
+
 #pragma warning(disable:4201) // anon struct/union
