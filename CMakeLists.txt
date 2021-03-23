@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(eruption)
 set(BINARY ${CMAKE_PROJECT_NAME})
 
-file(GLOB_RECURSE CPP_SRC src/cpp/*.cpp src/cpp/*.h)
+file(GLOB_RECURSE CPP_SRC src/cpp/*.cpp src/cpp/*.h src/cpp/*.hpp)
 
 add_executable(eruption WIN32 ${CPP_SRC})
 target_compile_definitions(eruption PRIVATE SHADERS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/")
