@@ -160,6 +160,11 @@ DriverObjects Driver::getDriverObjects()
     return o;
 }
 
+vk::SurfaceCapabilitiesKHR Driver::getCaps()
+{
+    return m_gpu.getSurfaceCapabilitiesKHR(m_surface.get()).value;
+}
+
 void Driver::chooseAndInitGpu()
 {
     u32 deviceCount = 0;

@@ -41,7 +41,7 @@ void VulkanSwapchain::recreateSwapchain(uint2 _dims)
     Driver& driver = globals::getRef<Driver>();
     auto driverObjects = driver.getDriverObjects();
     auto device = driverObjects.m_device;
-    auto surface = driverObjects.m_surface;
+    auto surface = driverObjects.m_surface;    
 
     vk::SwapchainCreateInfoKHR swapchaininfo;
     swapchaininfo.setImageFormat(C_BackBufferFormat);
@@ -52,7 +52,7 @@ void VulkanSwapchain::recreateSwapchain(uint2 _dims)
     swapchaininfo.setImageSharingMode(vk::SharingMode::eExclusive);
     swapchaininfo.setSurface(surface);
     swapchaininfo.setMinImageCount(C_SwapchainImageCount);
-    swapchaininfo.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eInherit);
+    swapchaininfo.setPreTransform(driver.getCaps().currentTransform);
     swapchaininfo.setPresentMode(vk::PresentModeKHR::eMailbox);
     swapchaininfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
     swapchaininfo.setQueueFamilyIndices({ 0, nullptr });

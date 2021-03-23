@@ -17,6 +17,7 @@ public:
     Driver(const class Window& _window);
 
     DriverObjects getDriverObjects();
+    vk::SurfaceCapabilitiesKHR getCaps();
     void nameImage(vk::Image _img, LiteralString _name);
 
 private:
