@@ -2,14 +2,16 @@
 
 #include "rendering/platform/swapchain_base.h"
 
-class VulkanSwapchain final : public Swapchain_Base 
+class Swapchain_Vulkan final : public Swapchain_Base 
 {
 public:
-    VulkanSwapchain(uint2 _dims);
+    Swapchain_Vulkan(uint2 _dims);
 
     void resize(uint2 _dims) override;
     void flip(vk::Semaphore _sem) override;
     void present(vk::Semaphore _sem) override;
+
+    static const vk::Format C_BackBufferFormat = vk::Format::eB8G8R8A8Srgb;
 
 private:
     void recreateSwapchain(uint2 _dims);

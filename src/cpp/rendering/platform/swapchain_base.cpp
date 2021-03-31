@@ -2,6 +2,7 @@
 
 #include "swapchain_base.h"
 #include "rendering/driver.h"
+#include "rendering/swapchain.h"
 #include "globals.h"
 
 vk::Framebuffer Swapchain_Base::getCurrentFrameBuffer()
@@ -12,7 +13,7 @@ vk::Framebuffer Swapchain_Base::getCurrentFrameBuffer()
 Swapchain_Base::Swapchain_Base()
 {
     vk::AttachmentDescription attachment;
-    attachment.setFormat(C_BackBufferFormat);
+    attachment.setFormat(Swapchain::C_BackBufferFormat);
     attachment.setLoadOp(vk::AttachmentLoadOp::eClear);
     attachment.setStoreOp(vk::AttachmentStoreOp::eStore);
     attachment.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
@@ -61,7 +62,7 @@ void Swapchain_Base::initFrameBuffers(std::vector<vk::Image>& _swapchainImages, 
         vk::ImageViewCreateInfo viewinfo;
         viewinfo.setViewType(vk::ImageViewType::e2D);
         viewinfo.setImage(_swapchainImages[i]);
-        viewinfo.setFormat(C_BackBufferFormat);
+        viewinfo.setFormat(Swapchain::C_BackBufferFormat);
         vk::ImageSubresourceRange sr;
         sr.setAspectMask(vk::ImageAspectFlagBits::eColor);
         sr.setLevelCount(1);

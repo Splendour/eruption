@@ -4,24 +4,23 @@
 #include "globals.h"
 #include "rendering/driver.h"
 
-
-VulkanSwapchain::VulkanSwapchain(uint2 _dims)
+Swapchain_Vulkan::Swapchain_Vulkan(uint2 _dims)
 {
     recreateSwapchain(_dims);
 }
 
-void VulkanSwapchain::resize(uint2 _dims)
+void Swapchain_Vulkan::resize(uint2 _dims)
 {
     recreateSwapchain(_dims);
 }
 
-void VulkanSwapchain::flip(vk::Semaphore _sem)
+void Swapchain_Vulkan::flip(vk::Semaphore _sem)
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
     m_currentIndex = driver.m_device.acquireNextImageKHR(m_swapchain.get(), C_nsGpuTimeout, _sem).value;
 }
 
-void VulkanSwapchain::present(vk::Semaphore _sem)
+void Swapchain_Vulkan::present(vk::Semaphore _sem)
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
 
@@ -32,7 +31,7 @@ void VulkanSwapchain::present(vk::Semaphore _sem)
     VK_CHECK(driver.m_gQueue.presentKHR(presentinfo));
 }
 
-void VulkanSwapchain::recreateSwapchain(uint2 _dims)
+void Swapchain_Vulkan::recreateSwapchain(uint2 _dims)
 {
     Driver& driver = globals::getRef<Driver>();
     auto driverObjects = driver.getDriverObjects();

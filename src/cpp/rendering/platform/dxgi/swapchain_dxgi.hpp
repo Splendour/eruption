@@ -40,7 +40,6 @@ Swapchain_DXGI::Swapchain_DXGI(uint2 _dims)
         presentQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         ThrowIfFailed(m_d3dDevice->CreateCommandQueue(&presentQueueDesc, IID_PPV_ARGS(&presentQueue)));
 
-
         constexpr static DXGI_FORMAT C_D3DBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
         static_assert(C_BackBufferFormat == vk::Format::eR8G8B8A8Unorm);
 
