@@ -131,7 +131,6 @@ inline void Swapchain_DXGI::recreateImages(uint2 _dims)
         imageinfo.setPNext(&externinfo);
         imageinfo.setImageType(vk::ImageType::e2D);
         imageinfo.setFormat(C_BackBufferFormat);
-        //imageinfo.setFormat(vk::Format::eB8G8R8A8Srgb);
         imageinfo.setUsage(vk::ImageUsageFlagBits::eColorAttachment);
         imageinfo.setArrayLayers(1);
         imageinfo.setSamples(vk::SampleCountFlagBits::e1);
@@ -153,7 +152,6 @@ inline void Swapchain_DXGI::recreateImages(uint2 _dims)
             }
         }
 
-        //LPCWSTR handleNames[] = { L"BackBuffer0", L"BackBuffer1", L"BackBuffer2" };
         HANDLE imgHandle = nullptr;
         HRESULT hr = (m_d3dDevice->CreateSharedHandle(d3dFrameBuffers[i].Get(), nullptr, GENERIC_ALL, nullptr, &imgHandle));
         ThrowIfFailed(hr);
@@ -171,7 +169,6 @@ inline void Swapchain_DXGI::recreateImages(uint2 _dims)
         meminfo.setMemoryTypeIndex(memindex);
         meminfo.setPNext(&win32MemInfo);
         
-        // FIXME: crash on resize
         m_swapchainMemory[i] = device.allocateMemoryUnique(meminfo).value;
         VK_CHECK(device.bindImageMemory(m_images[i], m_swapchainMemory[i].get(), 0));
 
