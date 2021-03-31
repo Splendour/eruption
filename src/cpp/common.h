@@ -6,8 +6,6 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-//#include <wrl.h>
-//using Microsoft::WRL::ComPtr;
 #endif
 
 #define APP_NAME "eruption"

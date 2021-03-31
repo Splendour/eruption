@@ -64,7 +64,6 @@ void Renderer::RenderFrame()
     }
 
     m_swapChain->flip(getCurrentVirtualFrame().m_presentSemaphore.get());
-
     driver.m_device.resetCommandPool(getCurrentVirtualFrame().m_cmdBufferPool.get());
     getDefaultCmdBuffer().reset();
 
@@ -79,6 +78,30 @@ void Renderer::RenderFrame()
     VK_CHECK(driver.m_gQueue.submit(submitinfo, getCurrentVirtualFrame().m_renderFence.get()));
 
     completeFrame();
+}
+
+void Renderer::await(vk::Semaphore _sem)
+{
+    DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
+    vk::SubmitInfo submitinfo;
+    submitinfo.setCommandBuffers({ 0, nullptr });
+    submitinfo.setSignalSemaphores({ 0, VK_NULL_HANDLE });
+    submitinfo.setWaitSemaphores({ 1, &_sem });
+    vk::PipelineStageFlags dstmask = vk::PipelineStageFlagBits::eTopOfPipe;
+    submitinfo.setPWaitDstStageMask(&dstmask);
+    VK_CHECK(driver.m_gQueue.submit(submitinfo));   
+}
+
+void Renderer::signal(vk::Semaphore _sem)
+{
+    DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
+    vk::SubmitInfo submitinfo;
+    submitinfo.setCommandBuffers({ 0, nullptr });
+    submitinfo.setSignalSemaphores({ 1, &_sem });
+    submitinfo.setWaitSemaphores({ 0, VK_NULL_HANDLE });
+    vk::PipelineStageFlags dstmask = vk::PipelineStageFlagBits::eTopOfPipe;
+    submitinfo.setPWaitDstStageMask(&dstmask);
+    VK_CHECK(driver.m_gQueue.submit(submitinfo));
 }
 
 
@@ -108,12 +131,18 @@ void Renderer::waitForGpuIdle()
 void Renderer::completeFrame()
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
+
     m_swapChain->present(getCurrentVirtualFrame().m_renderSemaphore.get());
 
-    VK_CHECK(driver.m_device.waitForFences({ 1, &getCurrentVirtualFrame().m_renderFence.get() }, true, C_nsGpuTimeout));
-    driver.m_device.resetFences({ 1, &getCurrentVirtualFrame().m_renderFence.get() });
     m_currentFrameIndex = (m_currentFrameIndex + 1) % FRAME_LATENCY;
     m_frameNum++;
+
+    // The resources for the first FRAME_LATENCY frames are ready, but there is nothing to signal the fence
+    // TODO: find a more elegant way to handle it
+    if (m_frameNum >= FRAME_LATENCY) {
+        VK_CHECK(driver.m_device.waitForFences({ 1, &getCurrentVirtualFrame().m_renderFence.get() }, true, C_nsGpuTimeout));
+        driver.m_device.resetFences({ 1, &getCurrentVirtualFrame().m_renderFence.get() });
+    }
 }
 
 void Renderer::recordCommands()
@@ -123,7 +152,7 @@ void Renderer::recordCommands()
     VK_CHECK(getDefaultCmdBuffer().begin(cmdBeginInfo));
 
     vk::ClearValue clearValue;
-    float flash = 0.7f + 3 * abs(sin(m_frameNum / 120.f));
+    float flash = abs(sin(m_frameNum / 144.f));
     clearValue.color.setFloat32({ { 0.1f, flash, 0.2f, 1.0f } });
     vk::Rect2D area;
     area.setOffset({ 0, 0 });

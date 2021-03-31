@@ -18,6 +18,8 @@ public:
 
     DriverObjects getDriverObjects();
     vk::SurfaceCapabilitiesKHR getCaps();
+    vk::PhysicalDeviceIDPropertiesKHR getGpuID();
+    vk::PhysicalDeviceMemoryProperties getMemProps();
     void nameImage(vk::Image _img, LiteralString _name);
 
 private:

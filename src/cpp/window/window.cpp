@@ -2,7 +2,9 @@
 
 #include "window.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 // https://stackoverflow.com/a/31526753/2675758
 GLFWmonitor* getCurrentMonitor(GLFWwindow* window)
@@ -50,7 +52,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     Window* windowPtr = static_cast<Window*>(glfwGetWindowUserPointer(window));
     if (key == GLFW_KEY_ESCAPE)
         glfwSetWindowShouldClose(window, true);
-
+    
     if (mods == GLFW_MOD_ALT) {
         if (key == GLFW_KEY_ENTER) {
             if (!windowPtr->isFullscreen()) {
@@ -63,6 +65,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                 glfwSetWindowSize(window, mode->width, mode->height);
             } else {
                 windowPtr->setFullscreen(false);
+                windowPtr->setDims(windowPtr->m_windowedDims);
                 glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
                 glfwSetWindowSize(window, windowPtr->m_windowedDims.x, windowPtr->m_windowedDims.y);
                 glfwSetWindowPos(window, windowPtr->m_windowedPos.x, windowPtr->m_windowedPos.y);
@@ -101,6 +104,15 @@ Window::Window(u32 _width, u32 _height, const char* _name)
 bool Window::isMinimized()
 {
     return m_dims.x < WINDOW_MIN_WIDTH && m_dims.y < WINDOW_MIN_HEIGHT;
+}
+
+NativeWindowHandle Window::getNativeHandle()
+{
+    #ifdef _WIN32
+    return glfwGetWin32Window(m_window);
+    #else
+    #error Not implemented
+    #endif
 }
 
 Window::~Window()

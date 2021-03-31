@@ -39,7 +39,7 @@ Driver::Driver(const class Window& _window)
         SmallVector<const char*, 8> instanceExtensions = {
             VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
             VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
-            //VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
             //VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME,
         };
 
@@ -101,7 +101,6 @@ Driver::Driver(const class Window& _window)
         SmallVector<const char*, 8> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-            VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
         };
         vk::DeviceCreateInfo deviceinfo;
         deviceinfo.setPEnabledExtensionNames({ deviceExtensions.size(), deviceExtensions.data() });
@@ -163,6 +162,17 @@ DriverObjects Driver::getDriverObjects()
 vk::SurfaceCapabilitiesKHR Driver::getCaps()
 {
     return m_gpu.getSurfaceCapabilitiesKHR(m_surface.get()).value;
+}
+
+vk::PhysicalDeviceIDPropertiesKHR Driver::getGpuID()
+{
+    auto props = m_gpu.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceIDProperties>(m_loader);
+    return props.get<vk::PhysicalDeviceIDPropertiesKHR>();
+}
+
+vk::PhysicalDeviceMemoryProperties Driver::getMemProps()
+{
+    return m_gpu.getMemoryProperties();
 }
 
 void Driver::chooseAndInitGpu()

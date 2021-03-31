@@ -21,6 +21,13 @@ find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
 target_link_libraries(eruption PRIVATE ${Vulkan_LIBRARIES})
 
+# On windows we use a d3d12 swapchain to get flip presentation modes
+if(MSVC)
+    target_link_libraries(eruption PRIVATE dxgi.lib)
+    target_link_libraries(eruption PRIVATE d3d12.lib)
+endif()
+
+
 # Warnings
 if(MSVC)
     target_compile_options(${BINARY} PRIVATE /W4 /WX)
@@ -41,16 +48,10 @@ endif()
 if(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/EHsc ")
       string(REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-      message(STATUS "CMAKE_CXX_FLAGS matches /EHsc before end of string
-    -- replaced...")
-      message(STATUS "")
     endif()
     
     if(CMAKE_CXX_FLAGS MATCHES "/EHsc$")
       string(REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-      message(STATUS "CMAKE_CXX_FLAGS matches /EHsc at end of string --
-    replaced...")
-      message(STATUS "")
     endif()
 endif()
 

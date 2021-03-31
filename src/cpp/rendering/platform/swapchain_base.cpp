@@ -4,6 +4,11 @@
 #include "rendering/driver.h"
 #include "globals.h"
 
+vk::Framebuffer Swapchain_Base::getCurrentFrameBuffer()
+{
+    return m_swapchainFrameBuffers[m_currentIndex].get();
+}
+
 Swapchain_Base::Swapchain_Base()
 {
     vk::AttachmentDescription attachment;
@@ -43,6 +48,35 @@ Swapchain_Base::Swapchain_Base()
 vk::RenderPass Swapchain_Base::getCompositionRenderPass()
 {
     return m_finalPass.get();
+}
+
+void Swapchain_Base::initFrameBuffers(std::vector<vk::Image>& _swapchainImages, uint2 _dims)
+{
+    Driver& driver = globals::getRef<Driver>();
+    vk::Device device = driver.getDriverObjects().m_device;
+
+    for (u32 i = 0; i < _swapchainImages.size(); ++i) {
+        driver.nameImage(_swapchainImages[i], "Backbuffer image");
+
+        vk::ImageViewCreateInfo viewinfo;
+        viewinfo.setViewType(vk::ImageViewType::e2D);
+        viewinfo.setImage(_swapchainImages[i]);
+        viewinfo.setFormat(C_BackBufferFormat);
+        vk::ImageSubresourceRange sr;
+        sr.setAspectMask(vk::ImageAspectFlagBits::eColor);
+        sr.setLevelCount(1);
+        sr.setLayerCount(1);
+        viewinfo.setSubresourceRange(sr);
+        m_swapchainImageViews[i] = device.createImageViewUnique(viewinfo).value;
+
+        vk::FramebufferCreateInfo fbinfo;
+        fbinfo.setRenderPass(m_finalPass.get());
+        fbinfo.setAttachments({ 1, &m_swapchainImageViews[i].get() });
+        fbinfo.setWidth(_dims.x);
+        fbinfo.setHeight(_dims.y);
+        fbinfo.setLayers(1);
+        m_swapchainFrameBuffers[i] = device.createFramebufferUnique(fbinfo).value;
+    }
 }
 
 

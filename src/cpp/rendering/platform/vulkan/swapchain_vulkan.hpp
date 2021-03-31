@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "rendering/driver.h"
 
+
 VulkanSwapchain::VulkanSwapchain(uint2 _dims)
 {
     recreateSwapchain(_dims);
@@ -31,11 +32,6 @@ void VulkanSwapchain::present(vk::Semaphore _sem)
     VK_CHECK(driver.m_gQueue.presentKHR(presentinfo));
 }
 
-vk::Framebuffer VulkanSwapchain::getCurrentFrameBuffer()
-{
-    return m_swapchainFrameBuffers[m_currentIndex].get();
-}
-
 void VulkanSwapchain::recreateSwapchain(uint2 _dims)
 {
     Driver& driver = globals::getRef<Driver>();
@@ -53,7 +49,7 @@ void VulkanSwapchain::recreateSwapchain(uint2 _dims)
     swapchaininfo.setSurface(surface);
     swapchaininfo.setMinImageCount(C_SwapchainImageCount);
     swapchaininfo.setPreTransform(driver.getCaps().currentTransform);
-    swapchaininfo.setPresentMode(vk::PresentModeKHR::eMailbox);
+    swapchaininfo.setPresentMode(vk::PresentModeKHR::eFifoRelaxed);
     swapchaininfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
     swapchaininfo.setQueueFamilyIndices({ 0, nullptr });
     swapchaininfo.setOldSwapchain(m_swapchain.get());
@@ -61,26 +57,5 @@ void VulkanSwapchain::recreateSwapchain(uint2 _dims)
     m_swapchain = device.createSwapchainKHRUnique(swapchaininfo).value;
 
     auto swapchainImages = device.getSwapchainImagesKHR(m_swapchain.get()).value;
-    for (u32 i = 0; i < swapchainImages.size(); ++i) {
-        driver.nameImage(swapchainImages[i], "Backbuffer image");
-
-        vk::ImageViewCreateInfo viewinfo;
-        viewinfo.setViewType(vk::ImageViewType::e2D);
-        viewinfo.setImage(swapchainImages[i]);
-        viewinfo.setFormat(C_BackBufferFormat);
-        vk::ImageSubresourceRange sr;
-        sr.setAspectMask(vk::ImageAspectFlagBits::eColor);
-        sr.setLevelCount(1);
-        sr.setLayerCount(1);
-        viewinfo.setSubresourceRange(sr);
-        m_swapchainImageViews[i] = device.createImageViewUnique(viewinfo).value;
-
-        vk::FramebufferCreateInfo fbinfo;
-        fbinfo.setRenderPass(m_finalPass.get());
-        fbinfo.setAttachments({ 1, &m_swapchainImageViews[i].get() });
-        fbinfo.setWidth(_dims.x);
-        fbinfo.setHeight(_dims.y);
-        fbinfo.setLayers(1);
-        m_swapchainFrameBuffers[i] = device.createFramebufferUnique(fbinfo).value;
-    }
+    initFrameBuffers(swapchainImages, _dims);
 }

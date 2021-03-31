@@ -12,6 +12,9 @@ public:
 
     void RenderFrame();
 
+    void await(vk::Semaphore _sem);
+    void signal(vk::Semaphore _sem);
+
 private:
     unique_ptr<Swapchain> m_swapChain;
 

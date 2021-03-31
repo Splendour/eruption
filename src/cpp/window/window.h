@@ -1,6 +1,9 @@
 #pragma once
 
 struct GLFWwindow;
+#ifdef _WIN32
+using NativeWindowHandle = struct HWND__*;
+#endif
 
 class Window {
 public:
@@ -18,6 +21,8 @@ public:
     bool isMinimized();
 
     GLFWwindow* getGlfwHandle() const { return m_window; }
+    NativeWindowHandle getNativeHandle();
+
 
     uint2 m_windowedDims;
     uint2 m_windowedPos;
