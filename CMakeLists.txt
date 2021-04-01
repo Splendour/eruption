@@ -16,6 +16,7 @@ add_subdirectory(extern/glfw)
 target_link_libraries(eruption PRIVATE glfw)
 
 target_include_directories(eruption PRIVATE extern/spdlog/include)
+target_include_directories(eruption PRIVATE extern/vma/include)
 
 find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
