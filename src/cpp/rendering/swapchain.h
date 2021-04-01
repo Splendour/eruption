@@ -2,7 +2,8 @@
 
 #include "platform/vk_common.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(DEVELOPMENT_MODE)
+// Using dxgi doesn't play well with graphics debuggers
 #define SWAPCHAIN_DXGI 1
 #else
 #define SWAPCHAIN_DXGI 0
