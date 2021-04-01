@@ -26,12 +26,11 @@ Renderer::Renderer(const Window& _window)
     }
 
     {
+        vk::SemaphoreCreateInfo semaphoreinfo;
+        m_presentSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
+        m_renderSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
+
         for (u32 i = 0; i < FRAME_LATENCY; ++i) {
-            vk::SemaphoreCreateInfo semaphoreinfo;
-
-            m_virtualFrames[i].m_presentSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
-            m_virtualFrames[i].m_renderSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
-
             vk::FenceCreateInfo fenceinfo;
             m_virtualFrames[i].m_renderFence = driver.m_device.createFenceUnique(fenceinfo).value;
         }
@@ -63,7 +62,7 @@ void Renderer::RenderFrame()
         resize(newDims);
     }
 
-    m_swapChain->flip(getCurrentVirtualFrame().m_presentSemaphore.get());
+    m_swapChain->flip(m_presentSemaphore.get());
     driver.m_device.resetCommandPool(getCurrentVirtualFrame().m_cmdBufferPool.get());
     getDefaultCmdBuffer().reset();
 
@@ -71,8 +70,8 @@ void Renderer::RenderFrame()
 
     vk::SubmitInfo submitinfo;
     submitinfo.setCommandBuffers({ 1, &getDefaultCmdBuffer() });
-    submitinfo.setSignalSemaphores({ 1, &getCurrentVirtualFrame().m_renderSemaphore.get() });
-    submitinfo.setWaitSemaphores({ 1, &getCurrentVirtualFrame().m_presentSemaphore.get() });
+    submitinfo.setSignalSemaphores({ 1, &m_renderSemaphore.get() });
+    submitinfo.setWaitSemaphores({ 1, &m_presentSemaphore.get() });
     vk::PipelineStageFlags dstmask = vk::PipelineStageFlagBits::eBottomOfPipe;
     submitinfo.setPWaitDstStageMask(&dstmask);
     VK_CHECK(driver.m_gQueue.submit(submitinfo, getCurrentVirtualFrame().m_renderFence.get()));
@@ -132,7 +131,7 @@ void Renderer::completeFrame()
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
 
-    m_swapChain->present(getCurrentVirtualFrame().m_renderSemaphore.get());
+    m_swapChain->present(m_renderSemaphore.get());
 
     m_currentFrameIndex = (m_currentFrameIndex + 1) % FRAME_LATENCY;
     m_frameNum++;
