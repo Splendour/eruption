@@ -9,7 +9,6 @@ int main()
     globals::init();
     logInfo("ooo!");
 
-
     while (!globals::getPtr<Window>()->shouldClose()) 
     {
         globals::getPtr<Window>()->pollEvents();

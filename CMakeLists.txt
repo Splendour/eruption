@@ -19,8 +19,10 @@ target_include_directories(eruption PRIVATE extern/spdlog/include)
 target_include_directories(eruption PRIVATE extern/vma/include)
 
 find_package(Vulkan REQUIRED)
-include_directories(${Vulkan_INCLUDE_DIRS})
+target_include_directories(eruption PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(eruption PRIVATE ${Vulkan_LIBRARIES})
+
+target_include_directories(eruption PRIVATE extern/dxc/include)
 
 # On windows we use a d3d12 swapchain to get flip presentation modes
 if(MSVC)
@@ -66,3 +68,8 @@ if(MSVC)
 endif()
 
 add_definitions(-DDEV_PATH=\"${PROJECT_SOURCE_DIR}\")
+
+add_custom_command(TARGET eruption POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/copy_to_binary"
+        $<TARGET_FILE_DIR:eruption>)
