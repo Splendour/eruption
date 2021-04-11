@@ -44,11 +44,32 @@ Swapchain_Base::Swapchain_Base()
 
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
     m_finalPass = driver.m_device.createRenderPassUnique(passinfo).value;
+
+    vk::SemaphoreCreateInfo semaphoreinfo;
+    for (u32 i = 0; i < C_SwapchainImageCount; ++i) {
+        m_presentSemaphores[i] = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
+        m_renderSemaphores[i] = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
+    }
 }
 
 vk::RenderPass Swapchain_Base::getCompositionRenderPass()
 {
     return m_finalPass.get();
+}
+
+vk::Semaphore* Swapchain_Base::getPresentSemaphore()
+{
+    return &m_presentSemaphores[m_currentIndex].get();
+}
+
+vk::Semaphore* Swapchain_Base::getRenderSemaphore()
+{
+    return &m_renderSemaphores[m_currentIndex].get();
+}
+
+vk::Semaphore Swapchain_Base::getNextPresentSemaphore()
+{
+    return m_presentSemaphores[(m_currentIndex + 1) % C_SwapchainImageCount].get();
 }
 
 void Swapchain_Base::initFrameBuffers(std::vector<vk::Image>& _swapchainImages, uint2 _dims)
@@ -79,5 +100,4 @@ void Swapchain_Base::initFrameBuffers(std::vector<vk::Image>& _swapchainImages, 
         m_swapchainFrameBuffers[i] = device.createFramebufferUnique(fbinfo).value;
     }
 }
-
 

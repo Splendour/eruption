@@ -14,19 +14,19 @@ void Swapchain_Vulkan::resize(uint2 _dims)
     recreateSwapchain(_dims);
 }
 
-void Swapchain_Vulkan::flip(vk::Semaphore _sem)
+void Swapchain_Vulkan::flip()
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
-    m_currentIndex = driver.m_device.acquireNextImageKHR(m_swapchain.get(), C_nsGpuTimeout, _sem).value;
+    m_currentIndex = driver.m_device.acquireNextImageKHR(m_swapchain.get(), C_nsGpuTimeout, getNextPresentSemaphore()).value;
 }
 
-void Swapchain_Vulkan::present(vk::Semaphore _sem)
+void Swapchain_Vulkan::present()
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
 
     vk::PresentInfoKHR presentinfo;
     presentinfo.setSwapchains({ 1, &m_swapchain.get() });
-    presentinfo.setWaitSemaphores({ 1, &_sem });
+    presentinfo.setWaitSemaphores({ 1, getRenderSemaphore() });
     presentinfo.setImageIndices({ 1, &m_currentIndex });
     VK_CHECK(driver.m_gQueue.presentKHR(presentinfo));
 }
@@ -57,4 +57,6 @@ void Swapchain_Vulkan::recreateSwapchain(uint2 _dims)
 
     auto swapchainImages = device.getSwapchainImagesKHR(m_swapchain.get()).value;
     initFrameBuffers(swapchainImages, _dims);
+
+    m_currentIndex = C_SwapchainImageCount - 1;
 }

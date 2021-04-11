@@ -20,6 +20,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
     else
         logInfo("[Vulkan validation] {}", _pCallbackData->pMessage);
 
+    static bool treatWarningAsError = true;
+    if (treatWarningAsError)
+        BREAKPOINT();
+
     return VK_FALSE;
 }
 #endif

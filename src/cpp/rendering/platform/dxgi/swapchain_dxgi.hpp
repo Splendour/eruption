@@ -89,17 +89,17 @@ void Swapchain_DXGI::resize(uint2 _dims)
     recreateImages(_dims);
 }
 
-void Swapchain_DXGI::flip(vk::Semaphore _sem)
+void Swapchain_DXGI::flip()
 {
     Renderer& renderer = globals::getRef<Renderer>();
     m_currentIndex = m_d3dSwapchain->GetCurrentBackBufferIndex();
-    renderer.signal(_sem);
+    renderer.signal(*getPresentSemaphore());
 }
 
-void Swapchain_DXGI::present(vk::Semaphore _sem)
+void Swapchain_DXGI::present()
 {
     Renderer& renderer = globals::getRef<Renderer>();
-    renderer.await(_sem);
+    renderer.await(*getRenderSemaphore());
     bool vsync = true;
     ThrowIfFailed(m_d3dSwapchain->Present(vsync ? 1 : 0, 0));
 }
@@ -108,10 +108,6 @@ inline void Swapchain_DXGI::recreateImages(uint2 _dims)
 {
     Driver& driver = globals::getRef<Driver>();
     vk::Device device = driver.getDriverObjects().m_device;
-
-    for (UniqueHandle<vk::Framebuffer>& fb : m_swapchainFrameBuffers) {
-        fb.release();
-    }
 
     for (vk::Image img : m_images) {
         if (img)

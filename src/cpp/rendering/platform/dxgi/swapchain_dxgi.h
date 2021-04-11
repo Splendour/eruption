@@ -11,8 +11,8 @@ public:
     ~Swapchain_DXGI();
 
     void resize(uint2 _dims) override;
-    void flip(vk::Semaphore _sem) override;
-    void present(vk::Semaphore _sem) override;
+    void flip() override;
+    void present() override;
 
     static const vk::Format C_BackBufferFormat = vk::Format::eR8G8B8A8Unorm;
 

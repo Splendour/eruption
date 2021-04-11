@@ -9,31 +9,23 @@ Renderer::Renderer(const Window& _window)
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
 
-    {
-        for (u32 i = 0; i < FRAME_LATENCY; ++i) {
-            vk::CommandPoolCreateInfo poolinfo;
-            poolinfo.setQueueFamilyIndex(driver.m_queueIndex);
-            poolinfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-            m_virtualFrames[i].m_cmdBufferPool = driver.m_device.createCommandPoolUnique(poolinfo).value;
+    for (u32 i = 0; i < FRAME_LATENCY; ++i) {
+        vk::CommandPoolCreateInfo poolinfo;
+        poolinfo.setQueueFamilyIndex(driver.m_queueIndex);
+        poolinfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+        m_virtualFrames[i].m_cmdBufferPool = driver.m_device.createCommandPoolUnique(poolinfo).value;
 
-            vk::CommandBufferAllocateInfo allocateinfo;
-            allocateinfo.setCommandBufferCount(1);
-            allocateinfo.setCommandPool(m_virtualFrames[i].m_cmdBufferPool.get());
-            allocateinfo.setLevel(vk::CommandBufferLevel::ePrimary);
-            auto cmdBuffers = driver.m_device.allocateCommandBuffersUnique(allocateinfo).value;
-            m_virtualFrames[i].m_defaultCmdBuffer = std::move(cmdBuffers[0]);
-        }
+        vk::CommandBufferAllocateInfo allocateinfo;
+        allocateinfo.setCommandBufferCount(1);
+        allocateinfo.setCommandPool(m_virtualFrames[i].m_cmdBufferPool.get());
+        allocateinfo.setLevel(vk::CommandBufferLevel::ePrimary);
+        auto cmdBuffers = driver.m_device.allocateCommandBuffersUnique(allocateinfo).value;
+        m_virtualFrames[i].m_defaultCmdBuffer = std::move(cmdBuffers[0]);
     }
 
-    {
-        vk::SemaphoreCreateInfo semaphoreinfo;
-        m_presentSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
-        m_renderSemaphore = driver.m_device.createSemaphoreUnique(semaphoreinfo).value;
-
-        for (u32 i = 0; i < FRAME_LATENCY; ++i) {
-            vk::FenceCreateInfo fenceinfo;
-            m_virtualFrames[i].m_renderFence = driver.m_device.createFenceUnique(fenceinfo).value;
-        }
+    for (u32 i = 0; i < FRAME_LATENCY; ++i) {
+        vk::FenceCreateInfo fenceinfo;
+        m_virtualFrames[i].m_renderFence = driver.m_device.createFenceUnique(fenceinfo).value;
     }
 
     {
@@ -62,7 +54,7 @@ void Renderer::RenderFrame()
         resize(newDims);
     }
 
-    m_swapChain->flip(m_presentSemaphore.get());
+    m_swapChain->flip();
     driver.m_device.resetCommandPool(getCurrentVirtualFrame().m_cmdBufferPool.get());
     getDefaultCmdBuffer().reset();
 
@@ -70,8 +62,8 @@ void Renderer::RenderFrame()
 
     vk::SubmitInfo submitinfo;
     submitinfo.setCommandBuffers({ 1, &getDefaultCmdBuffer() });
-    submitinfo.setSignalSemaphores({ 1, &m_renderSemaphore.get() });
-    submitinfo.setWaitSemaphores({ 1, &m_presentSemaphore.get() });
+    submitinfo.setSignalSemaphores({ 1, m_swapChain->getRenderSemaphore() });
+    submitinfo.setWaitSemaphores({ 1, m_swapChain->getPresentSemaphore() });
     vk::PipelineStageFlags dstmask = vk::PipelineStageFlagBits::eBottomOfPipe;
     submitinfo.setPWaitDstStageMask(&dstmask);
     VK_CHECK(driver.m_gQueue.submit(submitinfo, getCurrentVirtualFrame().m_renderFence.get()));
@@ -131,7 +123,7 @@ void Renderer::completeFrame()
 {
     DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
 
-    m_swapChain->present(m_renderSemaphore.get());
+    m_swapChain->present();
 
     m_currentFrameIndex = (m_currentFrameIndex + 1) % FRAME_LATENCY;
     m_frameNum++;

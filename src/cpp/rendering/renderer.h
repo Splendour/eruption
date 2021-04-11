@@ -26,10 +26,6 @@ private:
     };
     VirtualFrame m_virtualFrames[FRAME_LATENCY];
 
-    // Semaphores are only used for gpu-gpu sync so we only need one of each
-    UniqueHandle<vk::Semaphore> m_presentSemaphore;
-    UniqueHandle<vk::Semaphore> m_renderSemaphore;
-
     u64 m_frameNum = 0;
     u32 m_currentFrameIndex = 0;
     uint2 m_viewportDims;
