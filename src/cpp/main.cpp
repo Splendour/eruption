@@ -4,6 +4,7 @@
 #include "window/window.h"
 #include "rendering/renderer.h"
 
+
 int main()
 {
     globals::init();

@@ -4,3 +4,6 @@
 [submodule "extern/glfw"]
 	path = extern/glfw
 	url = https://github.com/glfw/glfw
+[submodule "extern/SPIRV-Reflect"]
+	path = extern/SPIRV-Reflect
+	url = git@github.com:KhronosGroup/SPIRV-Reflect.git

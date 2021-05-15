@@ -22,4 +22,6 @@
 
 #define DISCARD(x) static_cast<void>(x)
 
+#define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
+
 #pragma warning(disable:4201) // anon struct/union

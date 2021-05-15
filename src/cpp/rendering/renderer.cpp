@@ -4,6 +4,8 @@
 #include "window/window.h"
 #include "driver.h"
 #include "globals.h"
+#include "vma/vk_mem_alloc.h"
+#include "shader.h"
 
 Renderer::Renderer(const Window& _window)
 {
@@ -33,6 +35,9 @@ Renderer::Renderer(const Window& _window)
         createResolutionDependentResources();
     }
 
+    {
+        initPSO();
+    }
 }
 
 Renderer::~Renderer()
@@ -156,6 +161,123 @@ void Renderer::recordCommands()
     rpinfo.setFramebuffer(m_swapChain->getCurrentFrameBuffer());
 
     getDefaultCmdBuffer().beginRenderPass(rpinfo, vk::SubpassContents::eInline);
+
+    getDefaultCmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, m_pso.get());
+    vk::Viewport vp;
+    vp.width  = static_cast<float>(m_viewportDims.x);
+    vp.height = static_cast<float>(m_viewportDims.y);
+    vp.maxDepth = 1.0f;
+    vk::Rect2D scissor;
+    scissor.extent.setWidth(m_viewportDims.x);
+    scissor.extent.setHeight(m_viewportDims.y);
+    getDefaultCmdBuffer().setViewport(0, vp);
+    getDefaultCmdBuffer().setScissor(0, scissor);
+    getDefaultCmdBuffer().draw(3, 1, 0, 0);
+
     getDefaultCmdBuffer().endRenderPass();
     VK_CHECK(getDefaultCmdBuffer().end());
+}
+
+void Renderer::initPSO()
+{
+    ShaderManager shaderManager = globals::getRef<ShaderManager>();
+
+    {
+        vk::PipelineShaderStageCreateInfo stageinfo[2];
+        ShaderID vsID("depth_pass.hlsl", ShaderType::vs, "vs_main");
+        {
+            vk::ShaderModule s = shaderManager.getShaderModule(vsID);
+            vk::PipelineShaderStageCreateInfo vsinfo;
+            vsinfo.setModule(s);
+            vsinfo.setPName(vsID.m_entryPoint);
+            vsinfo.setStage(vk::ShaderStageFlagBits::eVertex);
+            stageinfo[0] = vsinfo;
+        }
+
+        ShaderID psID("depth_pass.hlsl", ShaderType::ps, "ps_main");
+        {
+            vk::ShaderModule s = shaderManager.getShaderModule(psID);
+            vk::PipelineShaderStageCreateInfo psinfo;
+            psinfo.setModule(s);
+            psinfo.setPName(psID.m_entryPoint);
+            psinfo.setStage(vk::ShaderStageFlagBits::eFragment);
+            stageinfo[1] = psinfo;
+        }
+        
+        vk::PipelineVertexInputStateCreateInfo vtxinfo;
+        vk::PipelineInputAssemblyStateCreateInfo iainfo;
+        iainfo.setTopology(vk::PrimitiveTopology::eTriangleList);
+
+        vk::PipelineRasterizationStateCreateInfo rastinfo;
+        rastinfo.setPolygonMode(vk::PolygonMode::eFill);
+        rastinfo.setCullMode(vk::CullModeFlagBits::eBack);
+        rastinfo.setLineWidth(1.0f);
+
+        // https://stackoverflow.com/questions/58753504/vulkan-front-face-winding-order
+        // The origin for Vulkan is top-left
+        // Invert winding order by setting clockwise as front face
+        rastinfo.setFrontFace(vk::FrontFace::eClockwise);
+
+        
+
+        vk::PipelineMultisampleStateCreateInfo msinfo;
+        vk::PipelineColorBlendAttachmentState attachmentBlendState;
+        attachmentBlendState.setColorWriteMask(vk::ColorComponentFlagBits::eA
+            | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB);
+        attachmentBlendState.setBlendEnable(false);
+        attachmentBlendState.setSrcColorBlendFactor(vk::BlendFactor::eOne);
+        attachmentBlendState.setDstColorBlendFactor(vk::BlendFactor::eZero);
+        attachmentBlendState.setColorBlendOp(vk::BlendOp::eAdd);
+        attachmentBlendState.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
+        attachmentBlendState.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+        attachmentBlendState.setAlphaBlendOp(vk::BlendOp::eAdd);
+
+        vk::PipelineColorBlendStateCreateInfo blendState;
+        blendState.setLogicOpEnable(false);
+        blendState.setLogicOp(vk::LogicOp::eCopy);
+        blendState.setAttachments({ 1, &attachmentBlendState });
+
+        vk::PipelineDepthStencilStateCreateInfo depthState;
+        depthState.setDepthTestEnable(false);
+        depthState.setDepthWriteEnable(false);
+        depthState.setDepthCompareOp(vk::CompareOp::eLess);
+        depthState.setStencilTestEnable(false);
+        depthState.setMinDepthBounds(0.f);
+        depthState.setMaxDepthBounds(1.f);
+        depthState.setDepthBoundsTestEnable(true);
+
+        vk::PipelineDynamicStateCreateInfo dynamicStateInfo;
+        SmallVector<vk::DynamicState, 4> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+        dynamicStateInfo.setDynamicStates({ dynamicStates.size(), dynamicStates.data() });
+
+        vk::PipelineLayoutCreateInfo layoutinfo;
+        DriverObjects driver = globals::getRef<Driver>().getDriverObjects();
+        m_pipelineLayout = driver.m_device.createPipelineLayoutUnique(layoutinfo).value;
+
+        vk::PipelineViewportStateCreateInfo viewportState;
+        vk::Viewport viewport;
+        vk::Rect2D scissor;
+        viewportState.setViewports({ 1, &viewport });
+        viewportState.setScissors({ 1, &scissor });
+        
+
+        vk::GraphicsPipelineCreateInfo pipelineinfo;
+        pipelineinfo.setStages({ 2, stageinfo });
+        pipelineinfo.setPVertexInputState(&vtxinfo);
+        pipelineinfo.setPInputAssemblyState(&iainfo);
+        pipelineinfo.setPRasterizationState(&rastinfo);
+        pipelineinfo.setPMultisampleState(&msinfo);
+        pipelineinfo.setPColorBlendState(&blendState);
+        pipelineinfo.setPDepthStencilState(&depthState);
+        pipelineinfo.setPDynamicState(&dynamicStateInfo);
+        pipelineinfo.setPViewportState(&viewportState);
+        
+        pipelineinfo.setLayout(m_pipelineLayout.get());
+
+        // Framebuffers and graphics pipelines are created based on a specific render pass object.
+        // They must only be used with that render pass object, or one compatible with it.
+        pipelineinfo.setRenderPass(m_swapChain->getCompositionRenderPass());
+
+        m_pso = driver.m_device.createGraphicsPipelineUnique(nullptr, pipelineinfo).value;
+    }
 }

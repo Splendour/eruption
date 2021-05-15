@@ -5,6 +5,7 @@
 #include "window/window.h"
 #include "rendering/driver.h"
 #include "rendering/renderer.h"
+#include "rendering/shader.h"
 
 namespace globals {
 
@@ -12,6 +13,7 @@ namespace globals {
     Window* window;
     Renderer* renderer;
     Driver* driver;
+    ShaderManager* shadermgr;
 
     void init()
     {
@@ -24,6 +26,9 @@ namespace globals {
         driver = new Driver(*window);
         globals::GlobalObject<Driver>::set(driver);
 
+        shadermgr = new ShaderManager();
+        globals::GlobalObject<ShaderManager>::set(shadermgr);
+
         renderer = new Renderer(*window);
         globals::GlobalObject<Renderer>::set(renderer);
     }
@@ -31,6 +36,7 @@ namespace globals {
     void deinit()
     {
         delete renderer;
+        delete shadermgr;
         delete driver;
         delete window;
         delete logger;

@@ -32,3 +32,9 @@ using sc::SmallString;
 #include <memory>
 using std::unique_ptr;
 using std::shared_ptr;
+
+template <typename T>
+constexpr auto toUnderlyingType(T e)
+{
+    return static_cast<std::underlying_type<ShaderType>::type>(e);
+}

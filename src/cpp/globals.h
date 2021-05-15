@@ -27,6 +27,7 @@ template <typename T>
 inline T * getPtr()
 {
 	return GlobalObject<T>::getPtr();
+
 }
 
 void init();

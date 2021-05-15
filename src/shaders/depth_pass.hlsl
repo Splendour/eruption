@@ -5,7 +5,7 @@ struct RootConsts
     float3 color;
 };
 
-ConstantBuffer<RootConsts> rootConsts : register(b0);
+//ConstantBuffer<RootConsts> rootConsts : register(b0);
 
 struct VsOutput
 {
@@ -22,7 +22,7 @@ float2 fullscreenTrianglePos(uint _vid)
 // see https://twitter.com/turanszkij/status/1141638406956617730
 float3 cubePos(uint _vid)
 {
-    uint b = 1 << _vid;
+    uint b = 1U << _vid;
     return float3((0x287a & b) != 0, (0x02af & b) != 0, (0x31e3 & b) != 0);
 }
 
@@ -38,14 +38,15 @@ VsOutput vs_main(uint _vid : SV_VertexID)
 struct PsOutput
 {
     float4 color : SV_Target;
-    float depth : SV_Depth;
+    //float depth : SV_Depth;
 };
 
 
 PsOutput ps_main(VsOutput _input)
 {
     PsOutput Out;
-    Out.depth = _input.position.z;
-    Out.color = float4(rootConsts.color, 1.0f);
+    //Out.depth = _input.position.z;
+    //Out.color = float4(rootConsts.color, 1.0f);
+	Out.color = float4(1.0f, 0.f, 0.f, 1.0f);
     return Out;
 }

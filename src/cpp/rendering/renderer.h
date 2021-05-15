@@ -30,11 +30,15 @@ private:
     u32 m_currentFrameIndex = 0;
     uint2 m_viewportDims;
 
+    UniqueHandle<vk::PipelineLayout> m_pipelineLayout;
+    UniqueHandle<vk::Pipeline> m_pso;
+
     void createResolutionDependentResources();
     void resize(uint2 _newDims);
     void waitForGpuIdle();
     void completeFrame();
     void recordCommands();
+    void initPSO();
     VirtualFrame& getCurrentVirtualFrame() { return m_virtualFrames[m_currentFrameIndex]; }
     vk::CommandBuffer& getDefaultCmdBuffer() { return getCurrentVirtualFrame().m_defaultCmdBuffer.get(); };
 };

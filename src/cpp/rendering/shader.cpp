@@ -4,7 +4,11 @@
 
 #include "dxc/wrl.h"
 #include "dxc/dxcapi.h"
+#include "SPIRV-Reflect/spirv_reflect.h"
 #include <fstream>
+
+#include "globals.h"
+#include "rendering/driver.h"
 
 const wchar_t* shaderTypeToProfile(ShaderType _shaderType)
 {
@@ -65,9 +69,9 @@ std::string resolveShaderPath(LiteralString _shaderName)
     std::string path = SHADERS_FOLDER;
 
 #else
-    std::string path = "shaders";
+    std::string path = "shaders/";
 #endif
-    return path + "\\" + _shaderName;
+    return path + _shaderName;
 }
 
 std::wstring to_wstring(const std::string& _str)
@@ -112,8 +116,12 @@ ArgsVector getDefaultArgs()
 {
     ArgsVector args;
     args.push_back(L"-O3");
-    args.push_back(L"/Zi");
+    args.push_back(L"-WX");
+    args.push_back(L"-fvk-use-dx-layout");
+    args.push_back(L"-Zpc");
     args.push_back(L"-spirv");
+    args.push_back(L"-fspv-target-env=vulkan1.1");
+    args.push_back(L"-Zi");
     return args;
 }
 
@@ -128,7 +136,7 @@ void handleShaderCompileError(IDxcLibrary* _lib, IDxcBlob* _errorBlob, LiteralSt
     VERIFY_TRUE_MSG(false, "{}You may edit the shader and continue to attempt recompilation.", errMsg);
 }
 
-vector<u8> ShaderCompiler::compileShader(const ShaderID& _id, const ShaderType& _type, LiteralString _entryPoint)
+vector<u32> ShaderCompiler::compileShader(const ShaderID& _id)
 {
     Microsoft::WRL::ComPtr<IDxcCompiler2> compiler;
     VERIFY_TRUE(SUCCEEDED(createDxcInstance(CLSID_DxcCompiler, IID_PPV_ARGS(compiler.GetAddressOf()))));
@@ -149,7 +157,7 @@ vector<u8> ShaderCompiler::compileShader(const ShaderID& _id, const ShaderType& 
 
     std::string shaderPath = resolveShaderPath(name);
     std::wstring shaderName = to_wstring(name);
-    vector<u8> result;
+    vector<u32> result;
     bool recompile = false;
 
     do {
@@ -165,8 +173,8 @@ vector<u8> ShaderCompiler::compileShader(const ShaderID& _id, const ShaderType& 
         Microsoft::WRL::ComPtr<IDxcBlob> preProcessedHlsl;
         VERIFY_TRUE(SUCCEEDED(preprocessResult->GetResult(preProcessedHlsl.GetAddressOf())));
 
-        //std::string ssss((char*)preProcessedHlsl->GetBufferPointer(), preProcessedHlsl->GetBufferSize());
-        //logInfo(ssss);
+        //std::string preProcessedShaderSrc((char*)preProcessedHlsl->GetBufferPointer(), preProcessedHlsl->GetBufferSize());
+        //logInfo(preProcessedShaderSrc);
 
         HRESULT preprocessStatus;
         preprocessResult->GetStatus(&preprocessStatus);
@@ -190,11 +198,12 @@ vector<u8> ShaderCompiler::compileShader(const ShaderID& _id, const ShaderType& 
 
         auto args = getDefaultArgs();
         VERIFY_TRUE(SUCCEEDED(compiler->Compile(shaderSrcPreprocessed.Get(),
-            shaderName.c_str(), to_wstring(_entryPoint).c_str(),
-            shaderTypeToProfile(_type), args.data(), (u32)args.size(), nullptr, 0, &includer, compilationResult.GetAddressOf())));
+            shaderName.c_str(), to_wstring(_id.m_entryPoint).c_str(),
+            shaderTypeToProfile(_id.m_type), args.data(), (u32)args.size(), nullptr, 0, &includer, compilationResult.GetAddressOf())));
 
         HRESULT compileStatus;
         compilationResult->GetStatus(&compileStatus);
+        
         if (FAILED(compileStatus)) {
             recompile = true;
             Microsoft::WRL::ComPtr<IDxcBlobEncoding> errorBlob;
@@ -204,10 +213,46 @@ vector<u8> ShaderCompiler::compileShader(const ShaderID& _id, const ShaderType& 
             recompile = false;
             Microsoft::WRL::ComPtr<IDxcBlob> code;
             VERIFY_TRUE(SUCCEEDED(compilationResult->GetResult(code.GetAddressOf())));
-            result.resize(code->GetBufferSize());
+            result.resize(code->GetBufferSize() / sizeof(result[0]));
             memcpy(result.data(), code->GetBufferPointer(), code->GetBufferSize());
         }
     } while (recompile);
 
     return result;
+}
+
+vk::ShaderModule ShaderManager::getShaderModule(const ShaderID& _id)
+{
+    auto device = globals::getRef<Driver>().getDriverObjects().m_device;
+
+    auto it = m_cache.find(_id);
+    if (it == m_cache.end()) {
+        vector<u32> code = m_compiler.compileShader(_id);
+
+        {
+            // TODO: reflect spirv
+            //SpvReflectShaderModule reflectModule;
+            //VERIFY_TRUE(SPV_REFLECT_RESULT_SUCCESS ==
+            //    spvReflectCreateShaderModule(code.size() * 4, code.data(), &reflectModule));
+            //logInfo("{}", reflectModule.descriptor_binding_count);
+        }
+
+
+        vk::ShaderModuleCreateInfo info;
+        info.setCode(code);
+        it = m_cache.emplace(_id, device.createShaderModule(info).value).first;
+    }
+    return it->second;
+}
+
+ShaderManager::ShaderManager()
+{
+    m_cache.reserve(256);
+}
+
+ShaderManager::~ShaderManager()
+{
+    auto device = globals::getRef<Driver>().getDriverObjects().m_device;
+    for (auto pair : m_cache)
+        device.destroyShaderModule(pair.second);
 }

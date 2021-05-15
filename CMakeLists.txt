@@ -24,6 +24,10 @@ target_link_libraries(eruption PRIVATE ${Vulkan_LIBRARIES})
 
 target_include_directories(eruption PRIVATE extern/dxc/include)
 
+target_include_directories(eruption PRIVATE extern)
+add_library(spirvreflect extern/SPIRV-Reflect/spirv_reflect.c extern/SPIRV-Reflect/spirv_reflect.h)
+target_link_libraries(eruption PRIVATE spirvreflect)
+
 # On windows we use a d3d12 swapchain to get flip presentation modes
 if(MSVC)
     target_link_libraries(eruption PRIVATE dxgi.lib)
