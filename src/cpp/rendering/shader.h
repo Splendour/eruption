@@ -40,7 +40,13 @@ struct hash<ShaderID> {
         std::size_t h = std::hash<u8> {}(toUnderlyingType(s.m_type));
         hash_combine(h, (s.m_name)); // hash with content instead of ptr?
         hash_combine(h, (s.m_entryPoint));
-        hash_combine_array(h, s.m_defines);
+        //hash_combine_array(h, s.m_defines);
+        // hash defines in an order-independent way
+        std::size_t definesHash = 0;
+        for (LiteralString def : s.m_defines) {
+            definesHash += std::hash<LiteralString> ()(def);
+        }
+        hash_combine(h, definesHash);
         return h;
     }
 };
