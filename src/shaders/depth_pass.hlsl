@@ -14,8 +14,8 @@ struct VsOutput
 
 float2 fullscreenTrianglePos(uint _vid)
 {
-    //return float2((_vid << 1) & 2, _vid & 2) * 2.0f - 1.0f;
-    return float2((_vid << 1) & 2, _vid & 2) * 0.75f - 0.75f;
+    return float2((_vid << 1) & 2, _vid & 2) * 2.0f - 1.0f;
+    //return float2((_vid << 1) & 2, _vid & 2) * 0.75f - 0.75f;
 }
 
 // trianglestrip(14)

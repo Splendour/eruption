@@ -165,8 +165,14 @@ void Renderer::recordCommands()
     getDefaultCmdBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, m_pso.get());
     vk::Viewport vp;
     vp.width  = static_cast<float>(m_viewportDims.x);
-    vp.height = static_cast<float>(m_viewportDims.y);
+
+    // https://stackoverflow.com/questions/58753504/vulkan-front-face-winding-order
+    // The NDC origin for Vulkan is top-left, while in d3d12 it's bottom-left
+    // Invert winding order by setting negative height. Change origin by setting y to max height.
+    vp.height = -static_cast<float>(m_viewportDims.y);
     vp.maxDepth = 1.0f;
+    vp.x = 0.f;
+    vp.y = static_cast<float>(m_viewportDims.y);
     vk::Rect2D scissor;
     scissor.extent.setWidth(m_viewportDims.x);
     scissor.extent.setHeight(m_viewportDims.y);
@@ -212,11 +218,7 @@ void Renderer::initPSO()
         rastinfo.setPolygonMode(vk::PolygonMode::eFill);
         rastinfo.setCullMode(vk::CullModeFlagBits::eBack);
         rastinfo.setLineWidth(1.0f);
-
-        // https://stackoverflow.com/questions/58753504/vulkan-front-face-winding-order
-        // The origin for Vulkan is top-left
-        // Invert winding order by setting clockwise as front face
-        rastinfo.setFrontFace(vk::FrontFace::eClockwise);
+        rastinfo.setFrontFace(vk::FrontFace::eCounterClockwise);
 
         
 
